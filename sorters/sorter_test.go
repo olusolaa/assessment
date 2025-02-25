@@ -40,9 +40,7 @@ func TestPriceSorter(t *testing.T) {
 	products := createTestProducts()
 
 	originalProducts := make([]*model.Product, len(products))
-	for i, p := range products {
-		originalProducts[i] = p
-	}
+	copy(originalProducts, products)
 
 	ascSorter := sorter.NewPriceSorter(true)
 	ascSorted := ascSorter.Sort(products)

@@ -2,7 +2,10 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 
@@ -25,7 +28,13 @@ func NewConfig() *Config {
 
 func (c *Config) LoadFromFile(filename string) error {
 	
-	file, err := os.Open(filename)
+	// Validate filename to prevent path traversal
+	cleanPath := filepath.Clean(filename)
+	if filepath.IsAbs(cleanPath) || strings.Contains(cleanPath, "..") {
+		return fmt.Errorf("invalid filename path: potential directory traversal attempt")
+	}
+	
+	file, err := os.Open(cleanPath)
 	if err != nil {
 		return err
 	}
@@ -39,7 +48,13 @@ func (c *Config) LoadFromFile(filename string) error {
 
 func (c *Config) SaveToFile(filename string) error {
 	
-	file, err := os.Create(filename)
+	// Validate filename to prevent path traversal
+	cleanPath := filepath.Clean(filename)
+	if filepath.IsAbs(cleanPath) || strings.Contains(cleanPath, "..") {
+		return fmt.Errorf("invalid filename path: potential directory traversal attempt")
+	}
+	
+	file, err := os.Create(cleanPath)
 	if err != nil {
 		return err
 	}

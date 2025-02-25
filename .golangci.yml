@@ -16,7 +16,6 @@ linters:
     - unparam
     - prealloc
     - gocritic
-    - shadow
   disable:
     - lll
     - gochecknoglobals

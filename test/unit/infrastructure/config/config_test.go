@@ -2,7 +2,6 @@ package config_test
 
 import (
 	"os"
-	"path/filepath"
 	"testing"
 	
 	"assessment/infrastructure/config"
@@ -23,36 +22,38 @@ func TestNewConfig(t *testing.T) {
 }
 
 func TestConfigLoadAndSave(t *testing.T) {
+	// Create a temporary file in the current directory
+	tempFile := "temp_config_test.json"
 	
-	tempDir := t.TempDir()
-	tempFile := filepath.Join(tempDir, "config.json")
+	// Ensure cleanup after test
+	defer os.Remove(tempFile)
 	
-	
+	// Create a new config
 	cfg := config.NewConfig()
 	cfg.DisabledSorters = []string{"Sorter1", "Sorter2"}
 	cfg.DefaultPageSize = 20
 	
-	
+	// Save the config to file
 	err := cfg.SaveToFile(tempFile)
 	if err != nil {
 		t.Fatalf("SaveToFile failed: %v", err)
 	}
 	
-	
+	// Verify the file was created
 	if _, err := os.Stat(tempFile); os.IsNotExist(err) {
 		t.Fatal("Config file was not created")
 	}
 	
-	
+	// Create a new config to load into
 	loadedCfg := config.NewConfig()
 	
-	
+	// Load the config from file
 	err = loadedCfg.LoadFromFile(tempFile)
 	if err != nil {
 		t.Fatalf("LoadFromFile failed: %v", err)
 	}
 	
-	
+	// Verify the loaded config matches the original
 	if len(loadedCfg.DisabledSorters) != 2 {
 		t.Errorf("Loaded DisabledSorters length mismatch: got %d, want %d", len(loadedCfg.DisabledSorters), 2)
 	}

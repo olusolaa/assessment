@@ -117,7 +117,7 @@ func initializeRepository() *persistence.InMemoryProductRepository {
 	}
 
 	products := make(model.ProductList, 0, len(sampleProducts))
-	
+
 	for _, data := range sampleProducts {
 		createdStr := data["created"].(string)
 		created, err := model.ParseTime(createdStr)
@@ -142,7 +142,7 @@ func initializeRepository() *persistence.InMemoryProductRepository {
 		fmt.Printf("Error saving products: %v\n", err)
 		return nil
 	}
-	
+
 	return repo
 }
 
@@ -150,7 +150,7 @@ func initializeRepository() *persistence.InMemoryProductRepository {
 func loadConfiguration() *config.Config {
 	cfg := config.NewConfig()
 	configFile := "infrastructure/config/sample_config.json"
-	
+
 	if _, err := os.Stat(configFile); err == nil {
 		if err := cfg.LoadFromFile(configFile); err != nil {
 			fmt.Printf("Warning: Failed to load config file: %v\n", err)
@@ -160,7 +160,7 @@ func loadConfiguration() *config.Config {
 	} else {
 		fmt.Println("Using default configuration")
 	}
-	
+
 	return cfg
 }
 
@@ -171,9 +171,9 @@ func displaySortedProducts(sorterUseCase *usecase.ProductSorterUseCase, products
 		fmt.Printf("Error sorting products by %s: %v\n", sorterName, err)
 		return
 	}
-	
+
 	fmt.Printf("Products sorted by %s:\n", sorterName)
 	for _, p := range sortedProducts {
 		fmt.Println(p.String())
 	}
-} 
+}

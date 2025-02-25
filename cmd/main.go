@@ -13,62 +13,23 @@ import (
 )
 
 func main() {
-	productData := []map[string]interface{}{
-		{
-			"id":          1,
-			"name":        "Alabaster Table",
-			"price":       12.99,
-			"created":     "2019-01-04",
-			"sales_count": 32,
-			"views_count": 730,
-		},
-		{
-			"id":          2,
-			"name":        "Zebra Table",
-			"price":       44.49,
-			"created":     "2012-01-04",
-			"sales_count": 301,
-			"views_count": 3279,
-		},
-		{
-			"id":          3,
-			"name":        "Coffee Table",
-			"price":       10.00,
-			"created":     "2014-05-28",
-			"sales_count": 1048,
-			"views_count": 20123,
-		},
-	}
-
-	products := make(model.ProductList, 0, len(productData))
-	for _, data := range productData {
-		createdStr := data["created"].(string)
-		created, err := model.ParseTime(createdStr)
-		if err != nil {
-			fmt.Printf("Error parsing date %s: %v\n", createdStr, err)
-			continue
-		}
-
-		product := &model.Product{
-			ID:         data["id"].(int),
-			Name:       data["name"].(string),
-			Price:      data["price"].(float64),
-			Created:    created,
-			SalesCount: data["sales_count"].(int),
-			ViewsCount: data["views_count"].(int),
-		}
-		products = append(products, product)
-	}
-
+	// Initialize repository
 	repo := persistence.NewInMemoryProductRepository()
-
-	if err := repo.Save(products); err != nil {
-		fmt.Printf("Error saving products: %v\n", err)
-		return
+	if repo == nil {
+		fmt.Println("Failed to initialize repository")
+		os.Exit(1)
 	}
 
+	// Load sample data
+	if err := loadSampleData(repo); err != nil {
+		fmt.Printf("Error loading sample data: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Load configuration
 	cfg := config.NewConfig()
 	configFile := "infrastructure/config/sample_config.json"
+
 	if _, err := os.Stat(configFile); err == nil {
 		if err := cfg.LoadFromFile(configFile); err != nil {
 			fmt.Printf("Warning: Failed to load config file: %v\n", err)
@@ -79,86 +40,79 @@ func main() {
 		fmt.Println("Using default configuration")
 	}
 
-	reg := registry.NewSorterRegistry()
-
-	sorterUseCase := usecase.NewProductSorterUseCase(reg)
-
+	// Initialize sorter registry and use case
+	sorterRegistry := registry.NewSorterRegistry()
+	sorterUseCase := usecase.NewProductSorterUseCase(sorterRegistry)
 	sorterUseCase.SetConfig(cfg)
+	sorter.InitializeDefaultSorters(sorterRegistry, cfg)
 
-	sorter.InitializeDefaultSorters(reg, cfg)
+	// Run the application
+	runApp(repo, sorterUseCase)
+}
 
-	reg.RegisterSorter(sorter.NewNameSorter(true))
-
+// runApp runs the main application logic
+func runApp(repo *persistence.InMemoryProductRepository, sorterUseCase *usecase.ProductSorterUseCase) {
+	// Display available sorters
 	fmt.Println("Available sorters:")
 	for _, name := range sorterUseCase.GetAvailableSorters() {
 		fmt.Printf("- %s\n", name)
 	}
 	fmt.Println()
 
-	repoProducts, err := repo.GetAll()
+	// Retrieve products from repository
+	products, err := repo.GetAll()
 	if err != nil {
-		fmt.Printf("Error getting products: %v\n", err)
+		fmt.Printf("Error retrieving products: %v\n", err)
 		return
 	}
 
-	priceSortedProducts, err := sorterUseCase.SortProducts(repoProducts, "Price (ascending)")
+	// Display products sorted by price
+	sortedProducts, err := sorterUseCase.SortProducts(products, "Price (ascending)")
 	if err != nil {
-		fmt.Printf("Error sorting by price: %v\n", err)
-	} else {
-		fmt.Println("Products sorted by price (ascending):")
-		printProducts(priceSortedProducts)
+		fmt.Printf("Error sorting products by price: %v\n", err)
+		return
 	}
 
-	spvSortedProducts, err := sorterUseCase.SortProducts(repoProducts, "Sales per View (descending)")
-	if err != nil {
-		fmt.Printf("Error sorting by sales per view: %v\n", err)
-	} else {
-		fmt.Println("\nProducts sorted by sales per view (descending):")
-		printProducts(spvSortedProducts)
-	}
-
-	dateSortedProducts, err := sorterUseCase.SortProducts(repoProducts, "Creation Date (ascending)")
-	if err != nil {
-		fmt.Printf("Error sorting by creation date: %v\n", err)
-	} else {
-		fmt.Println("\nProducts sorted by creation date (ascending):")
-		printProducts(dateSortedProducts)
-	}
-
-	nameSortedProducts, err := sorterUseCase.SortProducts(repoProducts, "Name (ascending)")
-	if err != nil {
-		fmt.Printf("Error sorting by name: %v\n", err)
-	} else {
-		fmt.Println("\nProducts sorted by name (ascending):")
-		printProducts(nameSortedProducts)
-	}
-
-	fmt.Println("\nDemonstrating pagination (page 1, 2 items per page):")
-	paginationOptions := usecase.PaginationOptions{Page: 1, PageSize: 2}
-	paginatedResult, err := sorterUseCase.SortAndPaginateProducts(repoProducts, "Price (ascending)", paginationOptions)
-	if err != nil {
-		fmt.Printf("Error paginating products: %v\n", err)
-	} else {
-		fmt.Printf("Page %d of %d (Total items: %d)\n",
-			paginatedResult.Page, paginatedResult.TotalPages, paginatedResult.TotalItems)
-		printProducts(paginatedResult.Items)
-
-		if paginatedResult.HasNext {
-			fmt.Println("Has next page: Yes")
-		} else {
-			fmt.Println("Has next page: No")
-		}
-
-		if paginatedResult.HasPrev {
-			fmt.Println("Has previous page: Yes")
-		} else {
-			fmt.Println("Has previous page: No")
-		}
+	fmt.Println("Products sorted by Price (ascending):")
+	for _, p := range sortedProducts {
+		fmt.Println(p.String())
 	}
 }
 
-func printProducts(products model.ProductList) {
-	for _, p := range products {
-		fmt.Println(p.String())
+// loadSampleData loads sample product data into the repository
+func loadSampleData(repo *persistence.InMemoryProductRepository) error {
+	// Sample product data
+	sampleProducts := []struct {
+		ID         int
+		Name       string
+		Price      float64
+		Created    string
+		SalesCount int
+		ViewsCount int
+	}{
+		{1, "Alabaster Table", 12.99, "2019-01-04", 32, 730},
+		{2, "Zebra Table", 44.49, "2012-01-04", 301, 3279},
+		{3, "Coffee Table", 10.00, "2014-05-28", 1048, 20123},
 	}
+
+	products := make(model.ProductList, 0, len(sampleProducts))
+
+	for _, data := range sampleProducts {
+		created, err := model.ParseTime(data.Created)
+		if err != nil {
+			return fmt.Errorf("error parsing date %s: %w", data.Created, err)
+		}
+
+		product := &model.Product{
+			ID:         data.ID,
+			Name:       data.Name,
+			Price:      data.Price,
+			Created:    created,
+			SalesCount: data.SalesCount,
+			ViewsCount: data.ViewsCount,
+		}
+		products = append(products, product)
+	}
+
+	return repo.Save(products)
 }

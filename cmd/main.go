@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
-	
+
 	"assessment/adapter/registry"
 	"assessment/adapter/sorter"
 	"assessment/domain/model"
@@ -61,7 +61,7 @@ func main() {
 	}
 
 	repo := persistence.NewInMemoryProductRepository()
-	
+
 	if err := repo.Save(products); err != nil {
 		fmt.Printf("Error saving products: %v\n", err)
 		return
@@ -82,11 +82,11 @@ func main() {
 	reg := registry.NewSorterRegistry()
 
 	sorterUseCase := usecase.NewProductSorterUseCase(reg)
-	
+
 	sorterUseCase.SetConfig(cfg)
-	
+
 	sorter.InitializeDefaultSorters(reg, cfg)
-	
+
 	reg.RegisterSorter(sorter.NewNameSorter(true))
 
 	fmt.Println("Available sorters:")
@@ -139,16 +139,16 @@ func main() {
 	if err != nil {
 		fmt.Printf("Error paginating products: %v\n", err)
 	} else {
-		fmt.Printf("Page %d of %d (Total items: %d)\n", 
+		fmt.Printf("Page %d of %d (Total items: %d)\n",
 			paginatedResult.Page, paginatedResult.TotalPages, paginatedResult.TotalItems)
 		printProducts(paginatedResult.Items)
-		
+
 		if paginatedResult.HasNext {
 			fmt.Println("Has next page: Yes")
 		} else {
 			fmt.Println("Has next page: No")
 		}
-		
+
 		if paginatedResult.HasPrev {
 			fmt.Println("Has previous page: Yes")
 		} else {
@@ -161,4 +161,4 @@ func printProducts(products model.ProductList) {
 	for _, p := range products {
 		fmt.Println(p.String())
 	}
-} 
+}

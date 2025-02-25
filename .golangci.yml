@@ -15,17 +15,14 @@ linters:
     - unconvert
     - unparam
     - prealloc
-    - exportloopref
     - gocritic
+    - shadow
   disable:
     - lll
-    - maligned
     - gochecknoglobals
     - gochecknoinits
 
 linters-settings:
-  govet:
-    check-shadowing: true
   gocyclo:
     min-complexity: 15
   dupl:
@@ -51,14 +48,16 @@ issues:
         - dupl
         - gosec
         - goconst
+  exclude-dirs:
+    - vendor
+    - test/integration
+  exclude-files:
+    - ".*\\.pb\\.go$"
+    - ".*\\.gen\\.go$"
   max-issues-per-linter: 0
   max-same-issues: 0
 
 run:
   timeout: 5m
-  skip-dirs:
-    - vendor
-    - test/integration
-  skip-files:
-    - ".*\\.pb\\.go$"
-    - ".*\\.gen\\.go$" 
+  output:
+    format: colored-line-number 
